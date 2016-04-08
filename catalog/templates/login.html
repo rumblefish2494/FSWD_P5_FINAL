@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<!-- The top of file index.html -->
+	<html itemscope itemtype="http://schema.org/Article">
+	<head>
+	<!-- BEGIN Pre-requisites -->
+
+	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js">
+	</script>
+	<script src="https://apis.google.com/js/client:platform.js?onload=start" async defer>
+	</script>
+	<!-- END Pre-requisites -->
+	<!-- Continuing the <head> section -->
+	<script>
+		function start() {
+			gapi.load('auth2', function() {
+				auth2 = gapi.auth2.init({
+					client_id: '560569518839-nl2dmnu9djm99eindpcjilhlkrja25b1.apps.googleusercontent.com',
+				});
+			});
+		}
+	</script>
+</head>
+<body>
+	<div class='row'>
+		<div class='col-md-2'><!--google sign in button-->
+			<button id="signinButton">Sign in with Google</button>
+		</div>
+		<div class="col-md-2"><!--facebook sign in button-->
+			<fb:login-button scope="public_profile,email" onlogin="sendTokenToServer();">
+				<a href='javascript:sendTokenToServer()'>Login with Facebook</a>
+			</fb:login-button>
+		</div>
+	</div>
+	<script>//when google button clicked call signInCallBack
+		$('#signinButton').click(function() {
+		auth2.grantOfflineAccess({'redirect_uri': 'postmessage'}).then(signInCallback);
+		});
+	</script>
+	<div id="result"></div>
+
+	<script>//process user with google auth server
+	function signInCallback(authResult) {
+	  if (authResult['code']) {
+
+	    // Hide the sign-in button now that the user is authorized, for example:
+	    $('#signinButton').attr('style', 'display: none');
+	    $('.fb-login-button').attr('style', 'display: none');
+
+	    // Send the code to the server
+	    $.ajax({
+			type: 'POST',
+			url: '/gconnect?state={{STATE}}',
+			data: authResult['code'],
+			contentType: 'application/octet-stream; charset=utf-8',
+			success: function(result){
+				if (result) {
+					$('#result').html('login Successfull!</br>' + result + '</br>Redirecting...')
+					setTimeout(function() {
+						window.location.href = "/artists";
+					}, 4000);
+
+				} else if (authResult['error']) {
+					console.log('There was an error: ' + authResult['error']);
+
+				} else {
+					$('#result').html('Failed to make a server-side call. Check your configuration and console.');
+				}
+
+			}
+	    });
+	  } else {
+	    // There was an error.
+	  }
+	}
+
+	</script>
+
+	<!--facebook login-->
+	<script>//proccess user with facebook auth server
+		window.fbAsyncInit = function() {
+			FB.init({
+				appId      : '189863644693243',
+				xfbml      : true,
+				version    : 'v2.5'
+			});
+		};
+
+		(function(d, s, id){
+		var js, fjs = d.getElementsByTagName(s)[0];
+			if (d.getElementById(id)) {return;}
+			js = d.createElement(s); js.id = id;
+			js.src = "//connect.facebook.net/en_US/sdk.js";
+			fjs.parentNode.insertBefore(js, fjs);
+		}(document, 'script', 'facebook-jssdk'));
+
+		function sendTokenToServer() {
+		$('#signinButton').attr('style', 'display: none');
+	    $('.fb-login-button').attr('style', 'display: none');
+    	var access_token = FB.getAuthResponse()['accessToken'];
+    	console.log('Welcome! Fetching your account biznatch');
+    	console.log(access_token)
+    	FB.api('/me', function(response) {
+    		console.log('Successful login for: ' + response.name);
+    		$.ajax({
+    			type: 'POST',
+    			url: '/fbconnect?state={{STATE}}',
+    			processData: false,
+    			data: access_token,
+    			contentType: 'application/octet-stream; charset=utf-8',
+    			success: function(result) {
+    				//handle or verify the server response if necessary
+	    			if (result) {
+	    				$('#result').html('Login Successful!</br>' + result + '</br> Redirecting...')
+	    				setTimeout(function() {
+	    					window.location.href = '/artists';
+	    				}, 4000)
+
+	    			}
+    			}
+    		})
+    	})
+    }
+
+</script>
+
+</body>
+</html>
